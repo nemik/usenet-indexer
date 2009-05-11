@@ -1,0 +1,5 @@
+This was/is a very fast and dirty attempt at making a usenet archiver/indexer for some binaries groups I like to keep track of.
+
+It currently uses SQLite only to update the last-indexed article for each group and lists them via a 'watchlist' file. It sends them into Solr which is currently very stupidly being used as a database as well as a search engine.
+
+One of the first changes I'll make to this will be to keep the indexed parts/messages/etc in an REAL DB (either MySQL or SQLite or whatever) and use Solr only for the search or possibly use Sphinx for search with MySQL.
