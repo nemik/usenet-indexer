@@ -1,5 +1,7 @@
 This was/is a very fast and dirty attempt at making a usenet archiver/indexer for some binaries groups I like to keep track of.
 
-It currently uses SQLite only to update the last-indexed article for each group and lists them via a 'watchlist' file. It sends them into Solr which is currently very stupidly being used as a database as well as a search engine.
+This is now backed by a PostGreSQL database and no more Solr. I plan to use the text-indexing facilities of PGSQL for search as they'll be good enough for my purposes, but may later use Sphinx or Solr if need be; I don't expect this though.
 
-One of the first changes I'll make to this will be to keep the indexed parts/messages/etc in an REAL DB (either MySQL or SQLite or whatever) and use Solr only for the search or possibly use Sphinx for search with MySQL.
+For now it runs a bit slow and burns PGSQL quite a bit because of so many calls to make sure certain things exist. I'm sure this can be optimized further but for now works well enough for me.
+
+I later plan to add some PHP code that servers as a (very crude) HTTP front-end to all this. Ultimately, the goal would be to somehow find similarity amoungst the files gathered to automagically generate NZB's from them so they could be processed. Also to get ALL FILES from some groups that are chosen to act like that. I'll work on this as time allows.
