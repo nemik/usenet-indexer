@@ -6,7 +6,7 @@ TODO:
 """
 
 from nntplibx import NNTP_SSL
-import re, time, os, sys, urllib2, rfc822, time
+import re, time, os, sys, urllib2, rfc822, time, syslog
 from pyPgSQL import PgSQL
 
 def decode(s, encodings=('ascii', 'utf8', 'latin1')):
@@ -50,7 +50,7 @@ def process_group(group,c,connection):
 	#connect to usenet, with SSL! WOO!
 	s=''
 	try:
-		s = NNTP_SSL('ser.ve.r', 443, 'username', 'password')
+		s = NNTP_SSL('secure.news.astraweb.com', 443, 'nemik1', 'this1moois')
 	except:
 		return ("fail", 0)
 	
@@ -72,6 +72,7 @@ def process_group(group,c,connection):
 		latest = str(last_article)
 	to_do = int(last) - int(latest)
 	print "\n------NOW PROCESSING %d ARTICLES FROM %s-----\n\n" % (to_do, group)
+	syslog.syslog("NOW PROCESSING %d ARTICLES FROM %s" % (to_do, group))
 	if to_do ==0:
 		s.quit()
 		return ("",0)
@@ -95,12 +96,13 @@ def process_group(group,c,connection):
 def process_chunk(l0, l1, group, group_id,chunk,chunks):
 	s=''
 	try:
-		s = NNTP_SSL('se.rve.r', 443, 'username', 'password')
+		s = NNTP_SSL('secure.news.astraweb.com', 443, 'nemik1', 'this1moois')
 	except:
 		return ("fail", 0)
 	resp, count, first, last, name = s.group(group)
 	
 	print "\n------NOW PROCESSING CHUNK %d of %d (%d/%d) FROM %s-----\n\n" % (int(chunk),int(chunks),int(l0),int(l1),group)
+	syslog.syslog("NOW PROCESSING CHUNK %d of %d (%d/%d) FROM %s" % (int(chunk),int(chunks),int(l0),int(l1),group))
 	
 	docs_xml = ""
 	resp, subs = s.xover(str(l0), str(l1))
@@ -145,6 +147,8 @@ def process_chunk(l0, l1, group, group_id,chunk,chunks):
 					print "ARTICLE: : %s" % subject_exact
 				except:
 					print "ARTICLE: fuck you print-ascii"
+				#c.execute("INSERT INTO articles (id, group_id, subject, poster, date) VALUES (%s, %s, %s, %s, %s)", (sub[4], group_id, subject_exact, poster, date,))
+				#c.execute("INSERT INTO articles (id, group_id, subject, poster, date, time) VALUES (%s, %s, %s, %s, %s, current_timestamp)", (sub[4], group_id, subject_exact, poster, date,))
 				c.execute("INSERT INTO articles (id, group_id, subject, poster, date, time) VALUES (%s, %s, %s, %s, %s, (TIMESTAMP 'epoch' + %s * INTERVAL '1 second'))", (sub[4], group_id, subject_exact, poster, date,date,))
 				connection.commit()
 				continue
@@ -160,6 +164,8 @@ def process_chunk(l0, l1, group, group_id,chunk,chunks):
 				print "processing %s" % subject_file
 			except:
 				print "processing SOMETHING CAN'T BE PRINTED, fuck you ascii"
+			#c.execute("INSERT INTO files (subject, name, poster, parts_total, date) VALUES (%s, %s, %s, %s, %s)", (subject_file, subject_file, poster, part[1], date))
+			#c.execute("INSERT INTO files (subject, name, poster, parts_total, date, time) VALUES (%s, %s, %s, %s, %s, current_timestamp)", (subject_file, subject_file, poster, part[1], date))
 			c.execute("INSERT INTO files (subject, name, poster, parts_total, date, time) VALUES (%s, %s, %s, %s, %s, (TIMESTAMP 'epoch' + %s * INTERVAL '1 second'))", (subject_file, subject_file, poster, part[1], date,date))
 			connection.commit()
 
@@ -202,11 +208,14 @@ def process_chunk(l0, l1, group, group_id,chunk,chunks):
 		except:
 			continue
 	
-	print "first article:",subs[1][0],"last article:",subs[-1][0],"id is ",id
+	firprint = str("first article:"+subs[1][0]+"last article:"+subs[-1][0]+"id is "+id)
+	print firprint
+	syslog.syslog(firprint)
 	c.execute("UPDATE groups SET last_article = %s WHERE name = %s", (subs[-1][0], group,))
 	connection.commit()
 	
 	print "\n\n ---- STATUS OF %s UDPATED! ---- \n\n" % (group)
+	syslog.syslog("STATUS OF %s UDPATED!" % (group))
 	
 	s.quit()
 	return (docs_xml,subs[-1][0])
@@ -214,20 +223,22 @@ def process_chunk(l0, l1, group, group_id,chunk,chunks):
 """
 initial DB connections
 """
-connection = PgSQL.connect(None, "nntp", "password", "localhost", "nntp", client_encoding="utf-8")
+connection = PgSQL.connect(None, "nntp", "nntp4lyfe", "localhost", "nntp", client_encoding="utf-8")
 c = connection.cursor()
+
+syslog.openlog('py-nntp-indexer',0,syslog.LOG_CRON)
 
 docs_xml = ""
 
 group_article = {}
 
-for group in file('/path/to/watchlist','r').readlines():
+for group in file('/media/server/nntp/watchlist','r').readlines():
 	group = group.strip()
 	if group[0] == '#':
 		continue
 	process_group(group, c,connection)
 
-print "\n\n ---- DONE! ----\n"
+syslog.syslog("DONE!")
 
 c.close()
 connection.commit()

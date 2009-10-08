@@ -494,22 +494,7 @@ ALTER TABLE ONLY files
 ALTER TABLE ONLY groups
     ADD CONSTRAINT groups_pkey PRIMARY KEY (id);
 
-
---
--- Name: id; Type: CONSTRAINT; Schema: public; Owner: nntp; Tablespace: 
---
-
-ALTER TABLE ONLY parts
-    ADD CONSTRAINT id PRIMARY KEY (id);
-
-
---
--- Name: parts_id_key; Type: CONSTRAINT; Schema: public; Owner: nntp; Tablespace: 
---
-
-ALTER TABLE ONLY parts
-    ADD CONSTRAINT parts_id_key UNIQUE (id);
-
+CREATE INDEX parts_id_idx ON parts USING btree (id);
 
 --
 -- Name: files_id_idx; Type: INDEX; Schema: public; Owner: nntp; Tablespace: 
